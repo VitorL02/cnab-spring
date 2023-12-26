@@ -1,12 +1,17 @@
 package com.cnab.springproject.entidades;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-public record TransacaoVO(Long id, Integer tipo, Date data, BigDecimal valor, Long cpf, String cartao, Time hora, String donoDaLoja, String nomeDaLoja) {
+@Table("TRANSACAO")
+public record TransacaoVO(@Id Long id, Integer tipo, Date data, BigDecimal valor, Long cpf, String cartao, Time hora, @Column("DONO_LOJA") String donoDaLoja,@Column("NOME_LOJA")String nomeDaLoja) {
 
 
     public TransacaoVO withValor(BigDecimal valor){
