@@ -1,7 +1,7 @@
 package com.cnab.springproject;
 
 import com.cnab.springproject.dtos.TransacaoCnabDTO;
-import com.cnab.springproject.entidades.TransacaoVO;
+import com.cnab.springproject.entidades.Transacao;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -35,7 +34,8 @@ import java.math.BigDecimal;
 public class BatchConfig {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
-
+    @Autowired
+    private  JobRepository jobRepository;
 
     @Bean
     Job job(Step step,JobRepository jobRepository){
@@ -43,9 +43,9 @@ public class BatchConfig {
     }
 
     @Bean
-    Step step(JobRepository jobRepository, ItemReader<TransacaoCnabDTO> itemReader, ItemProcessor<TransacaoCnabDTO,TransacaoVO> itemProcessor, ItemWriter<TransacaoVO> itemWriter){
+    Step step(JobRepository jobRepository, ItemReader<TransacaoCnabDTO> itemReader, ItemProcessor<TransacaoCnabDTO, Transacao> itemProcessor, ItemWriter<Transacao> itemWriter){
         return new StepBuilder("step",jobRepository).
-                <TransacaoCnabDTO,TransacaoVO>chunk(1000,platformTransactionManager)
+                <TransacaoCnabDTO, Transacao>chunk(1000,platformTransactionManager)
                 .reader(itemReader).processor(itemProcessor)
                 .writer(itemWriter)
                 .build();
@@ -67,10 +67,10 @@ public class BatchConfig {
     }
 
     @Bean
-    ItemProcessor<TransacaoCnabDTO,TransacaoVO> processor(){
+    ItemProcessor<TransacaoCnabDTO, Transacao> processor(){
         return item ->{
             //Wither pattern - Usado para objetos imutavies para recriar somente a propriedade necessaria,recriando a transação solicitada
-            var transacao = new TransacaoVO(null,item.tipo(),null,item.valor().divide(BigDecimal.valueOf(100)),
+            var transacao = new Transacao(null,item.tipo(),null,item.valor().divide(BigDecimal.valueOf(100)),
                     item.cpf(),item.cartao(),null,item.donoDaLoja().trim(), item.nomeDaLoja().trim())
                     .withDate(item.data())
                     .withHora(item.hora());
@@ -80,8 +80,8 @@ public class BatchConfig {
     }
 
     @Bean
-    JdbcBatchItemWriter<TransacaoVO> writer(DataSource dataSource){
-        return new JdbcBatchItemWriterBuilder<TransacaoVO>().dataSource(dataSource).sql("INSERT INTO transacao(tipo,data,valor,cpf,cartao,hora,dono_loja,nome_loja)" +
+    JdbcBatchItemWriter<Transacao> writer(DataSource dataSource){
+        return new JdbcBatchItemWriterBuilder<Transacao>().dataSource(dataSource).sql("INSERT INTO transacao(tipo,data,valor,cpf,cartao,hora,dono_loja,nome_loja)" +
                 "VALUES (:tipo, :data, :valor,:cpf,:cartao,:hora,:donoDaLoja,:nomeDaLoja)").beanMapped().build();
     }
 
